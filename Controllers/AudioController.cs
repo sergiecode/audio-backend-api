@@ -36,7 +36,7 @@ namespace AudioBackend.Controllers
         [ProducesResponseType(typeof(ErrorResponse), 400)]
         [ProducesResponseType(typeof(ErrorResponse), 413)]
         [ProducesResponseType(typeof(ErrorResponse), 500)]
-        public async Task<IActionResult> UploadAudio([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadAudio([FromForm] IFormFile? file)
         {
             try
             {

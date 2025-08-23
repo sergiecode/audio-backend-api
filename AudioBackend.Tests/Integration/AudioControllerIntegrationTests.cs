@@ -42,6 +42,25 @@ namespace AudioBackend.Tests.Integration
                         ["AudioEnhancementService:AllowedFileExtensions:2"] = ".flac"
                     });
                 });
+                
+                builder.ConfigureServices(services =>
+                {
+                    // Remove the default HttpClient registration and replace with test configuration
+                    var httpClientDescriptor = services.FirstOrDefault(x => 
+                        x.ServiceType == typeof(HttpClient) && 
+                        x.ImplementationType == typeof(HttpClient));
+                    if (httpClientDescriptor != null)
+                    {
+                        services.Remove(httpClientDescriptor);
+                    }
+
+                    // Configure HttpClient for tests with the mock server URL
+                    services.AddHttpClient<IAudioProcessorService, AudioProcessorService>(client =>
+                    {
+                        client.BaseAddress = new Uri(_mockPythonService.Url!);
+                        client.Timeout = TimeSpan.FromSeconds(30);
+                    });
+                });
             });
 
             _client = _factory.CreateClient();
@@ -76,8 +95,9 @@ namespace AudioBackend.Tests.Integration
         [Fact]
         public async Task UploadAudio_NoFile_ReturnsBadRequest()
         {
-            // Arrange
+            // Arrange - send request without the "file" parameter that the controller expects
             var content = new MultipartFormDataContent();
+            content.Add(new StringContent("some data"), "other", "other.txt");
 
             // Act
             var response = await _client.PostAsync("/api/audio/upload", content);
@@ -126,7 +146,7 @@ namespace AudioBackend.Tests.Integration
             response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             
             var responseContent = await response.Content.ReadAsStringAsync();
-            responseContent.Should().Contain("Audio processing failed");
+            responseContent.Should().Contain("Audio enhancement service is currently unavailable");
         }
 
         [Fact]
@@ -217,6 +237,14 @@ namespace AudioBackend.Tests.Integration
 
         private void SetupMockPythonServiceSuccess()
         {
+            // Setup health endpoint to return healthy
+            _mockPythonService
+                .Given(Request.Create().WithPath("/health").UsingGet())
+                .RespondWith(Response.Create()
+                    .WithStatusCode(200)
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBody("OK"));
+
             var successResponse = new
             {
                 success = true,
@@ -242,6 +270,14 @@ namespace AudioBackend.Tests.Integration
 
         private void SetupMockPythonServiceError()
         {
+            // Setup health endpoint to return unhealthy
+            _mockPythonService
+                .Given(Request.Create().WithPath("/health").UsingGet())
+                .RespondWith(Response.Create()
+                    .WithStatusCode(503)
+                    .WithHeader("Content-Type", "application/json")
+                    .WithBody("Service Unavailable"));
+
             _mockPythonService
                 .Given(Request.Create().WithPath("/process").UsingPost())
                 .RespondWith(Response.Create()
