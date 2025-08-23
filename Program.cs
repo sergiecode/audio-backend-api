@@ -3,6 +3,9 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel web server explicitly
+builder.WebHost.UseUrls("http://localhost:5000");
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -72,7 +75,12 @@ if (app.Environment.IsDevelopment())
     app.UseCors("DevelopmentPolicy");
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
