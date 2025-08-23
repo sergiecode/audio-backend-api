@@ -348,9 +348,21 @@ This project is created for educational purposes as part of Sergie Code's progra
 Passionate about creating AI tools for musicians and teaching programming through practical projects. This audio enhancement API is part of a comprehensive suite of AI tools designed to empower musicians and audio professionals.
 
 **Connect with Sergie Code:**
-- 🎥 **YouTube**: [Sergie Code Channel]
-- 💼 **LinkedIn**: [Sergie Code Profile]  
-- 🐙 **GitHub**: [sergiecode]
+- 📸 Instagram: https://www.instagram.com/sergiecode
+
+- 🧑🏼‍💻 LinkedIn: https://www.linkedin.com/in/sergiecode/
+
+- 📽️Youtube: https://www.youtube.com/@SergieCode
+
+- 😺 Github: https://github.com/sergiecode
+
+- 👤 Facebook: https://www.facebook.com/sergiecodeok
+
+- 🎞️ Tiktok: https://www.tiktok.com/@sergiecode
+
+- 🕊️Twitter: https://twitter.com/sergiecode
+
+- 🧵Threads: https://www.threads.net/@sergiecode
 
 ---
 
