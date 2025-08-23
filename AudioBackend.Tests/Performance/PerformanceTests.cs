@@ -23,15 +23,28 @@ namespace AudioBackend.Tests.Performance
 
         private void SetupDefaultConfiguration()
         {
-            _mockConfiguration.Setup(c => c.GetValue<long>("AudioEnhancementService:MaxFileSizeBytes", It.IsAny<long>()))
-                .Returns(100 * 1024 * 1024); // 100MB
-
             var mockSection = new Mock<IConfigurationSection>();
-            mockSection.Setup(s => s.Get<string[]>())
-                .Returns(new[] { ".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg" });
-            
-            _mockConfiguration.Setup(c => c.GetSection("AudioEnhancementService:AllowedFileExtensions"))
+            mockSection.Setup(s => s.Value).Returns((100 * 1024 * 1024).ToString()); // 100MB
+            _mockConfiguration.Setup(c => c.GetSection("AudioEnhancementService:MaxFileSizeBytes"))
                 .Returns(mockSection.Object);
+
+            // Mock the file extensions section differently to avoid extension method issues
+            var mockExtensionsSection = new Mock<IConfigurationSection>();
+            var extensions = new[] { ".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg" };
+            
+            // Create mock child sections for each extension
+            var mockChildren = new List<IConfigurationSection>();
+            for (int i = 0; i < extensions.Length; i++)
+            {
+                var childSection = new Mock<IConfigurationSection>();
+                childSection.Setup(s => s.Value).Returns(extensions[i]);
+                childSection.Setup(s => s.Key).Returns(i.ToString());
+                mockChildren.Add(childSection.Object);
+            }
+            
+            mockExtensionsSection.Setup(s => s.GetChildren()).Returns(mockChildren);
+            _mockConfiguration.Setup(c => c.GetSection("AudioEnhancementService:AllowedFileExtensions"))
+                .Returns(mockExtensionsSection.Object);
         }
 
         [Fact]
@@ -177,7 +190,7 @@ namespace AudioBackend.Tests.Performance
             isHealthy.Should().BeTrue();
         }
 
-        private static Mock<IFormFile> CreateMockFile(string fileName, string contentType, long length)
+        private static IFormFile CreateMockFile(string fileName, string contentType, long length)
         {
             var mockFile = new Mock<IFormFile>();
             mockFile.Setup(f => f.FileName).Returns(fileName);

@@ -11,11 +11,11 @@ namespace AudioBackend.Controllers
     [Produces("application/json")]
     public class AudioController : ControllerBase
     {
-        private readonly AudioProcessorService _audioProcessorService;
+        private readonly IAudioProcessorService _audioProcessorService;
         private readonly ILogger<AudioController> _logger;
 
         public AudioController(
-            AudioProcessorService audioProcessorService,
+            IAudioProcessorService audioProcessorService,
             ILogger<AudioController> logger)
         {
             _audioProcessorService = audioProcessorService;

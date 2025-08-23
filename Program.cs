@@ -32,7 +32,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure HttpClient for AudioProcessorService
-builder.Services.AddHttpClient<AudioProcessorService>(client =>
+builder.Services.AddHttpClient<IAudioProcessorService, AudioProcessorService>(client =>
 {
     var baseUrl = builder.Configuration["AudioEnhancementService:BaseUrl"] ?? "http://localhost:8000";
     client.BaseAddress = new Uri(baseUrl);
@@ -45,7 +45,7 @@ builder.Services.AddHttpClient<AudioProcessorService>(client =>
 });
 
 // Register AudioProcessorService
-builder.Services.AddScoped<AudioProcessorService>();
+builder.Services.AddScoped<IAudioProcessorService, AudioProcessorService>();
 
 // Configure CORS for development
 builder.Services.AddCors(options =>
@@ -99,3 +99,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make Program accessible to tests
+public partial class Program { }

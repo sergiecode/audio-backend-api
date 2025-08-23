@@ -6,7 +6,7 @@ namespace AudioBackend.Services
     /// <summary>
     /// Service responsible for processing audio files by communicating with the Python microservice
     /// </summary>
-    public class AudioProcessorService
+    public class AudioProcessorService : IAudioProcessorService
     {
         private readonly HttpClient _httpClient;
         private readonly ILogger<AudioProcessorService> _logger;
@@ -34,6 +34,13 @@ namespace AudioBackend.Services
         {
             try
             {
+                // Check for null file first
+                if (audioFile == null)
+                {
+                    _logger.LogWarning("Null audio file provided for processing");
+                    return AudioProcessingResponse.Failure("No audio file provided");
+                }
+
                 _logger.LogInformation("Starting audio processing for file: {FileName}", audioFile.FileName);
 
                 // Validate file before processing
@@ -73,7 +80,7 @@ namespace AudioBackend.Services
 
                     _logger.LogInformation("Audio processing completed successfully for file: {FileName}", audioFile.FileName);
                     
-                    return AudioProcessingResponse.Success(
+                    return AudioProcessingResponse.CreateSuccess(
                         result?.ProcessingId ?? "unknown",
                         result?.OutputFile ?? "unknown",
                         result?.DownloadUrl ?? "",
@@ -93,17 +100,17 @@ namespace AudioBackend.Services
             }
             catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
             {
-                _logger.LogError(ex, "Audio processing timed out for file: {FileName}", audioFile.FileName);
+                _logger.LogError(ex, "Audio processing timed out for file: {FileName}", audioFile?.FileName ?? "unknown");
                 return AudioProcessingResponse.Failure("Audio processing timed out. Please try with a smaller file.");
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Network error while processing audio file: {FileName}", audioFile.FileName);
-                return AudioProcessingResponse.Failure("Unable to connect to audio processing service");
+                _logger.LogError(ex, "Network error while processing audio file: {FileName}", audioFile?.FileName ?? "unknown");
+                return AudioProcessingResponse.Failure("Audio enhancement service is currently unavailable");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error processing audio file: {FileName}", audioFile.FileName);
+                _logger.LogError(ex, "Unexpected error processing audio file: {FileName}", audioFile?.FileName ?? "unknown");
                 return AudioProcessingResponse.Failure($"An unexpected error occurred: {ex.Message}");
             }
         }
@@ -166,12 +173,20 @@ namespace AudioBackend.Services
             if (file == null || file.Length == 0)
                 return ValidationResult.Invalid("No audio file provided");
 
-            var maxFileSize = _configuration.GetValue<long>("AudioEnhancementService:MaxFileSizeBytes", 104857600); // 100MB default
-            if (file.Length > maxFileSize)
-                return ValidationResult.Invalid($"File size ({file.Length} bytes) exceeds maximum allowed ({maxFileSize} bytes)");
+            var maxFileSize = _configuration.GetSection("AudioEnhancementService:MaxFileSizeBytes").Value;
+            var maxFileSizeBytes = string.IsNullOrEmpty(maxFileSize) ? 104857600L : Convert.ToInt64(maxFileSize); // 100MB default
+            if (file.Length > maxFileSizeBytes)
+                return ValidationResult.Invalid($"File size ({file.Length} bytes) exceeds maximum allowed ({maxFileSizeBytes} bytes)");
 
-            var allowedExtensions = _configuration.GetSection("AudioEnhancementService:AllowedFileExtensions")
-                .Get<string[]>() ?? new[] { ".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg" };
+            var allowedExtensionsSection = _configuration.GetSection("AudioEnhancementService:AllowedFileExtensions");
+            var allowedExtensions = allowedExtensionsSection.GetChildren()
+                .Select(c => c.Value)
+                .Where(v => !string.IsNullOrEmpty(v))
+                .ToArray();
+            
+            // Fallback if configuration is empty
+            if (allowedExtensions.Length == 0)
+                allowedExtensions = new[] { ".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg" };
 
             var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(fileExtension))
@@ -213,7 +228,7 @@ namespace AudioBackend.Services
         public string DownloadUrl { get; set; } = string.Empty;
         public PythonServiceProcessingDetails? ProcessingDetails { get; set; }
 
-        public static AudioProcessingResponse Success(
+        public static AudioProcessingResponse CreateSuccess(
             string processingId, 
             string outputFile, 
             string downloadUrl, 

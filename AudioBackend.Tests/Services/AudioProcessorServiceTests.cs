@@ -37,15 +37,34 @@ namespace AudioBackend.Tests.Services
 
         private void SetupDefaultConfiguration()
         {
-            _mockConfiguration.Setup(c => c.GetValue<long>("AudioEnhancementService:MaxFileSizeBytes", It.IsAny<long>()))
-                .Returns(104857600); // 100MB
+            // Setup configuration for max file size
+            var maxFileSizeSection = new Mock<IConfigurationSection>();
+            maxFileSizeSection.Setup(s => s.Value).Returns("104857600"); // 100MB
+            _mockConfiguration.Setup(c => c.GetSection("AudioEnhancementService:MaxFileSizeBytes"))
+                .Returns(maxFileSizeSection.Object);
 
-            var mockSection = new Mock<IConfigurationSection>();
-            mockSection.Setup(s => s.Get<string[]>())
-                .Returns(new[] { ".wav", ".mp3", ".flac", ".m4a", ".aac", ".ogg" });
-            
+            // Setup configuration for allowed file extensions using GetChildren() approach
+            var allowedExtensionsSection = new Mock<IConfigurationSection>();
+            var children = new List<IConfigurationSection>
+            {
+                CreateMockConfigurationSection("0", ".wav"),
+                CreateMockConfigurationSection("1", ".mp3"),
+                CreateMockConfigurationSection("2", ".flac"),
+                CreateMockConfigurationSection("3", ".m4a"),
+                CreateMockConfigurationSection("4", ".aac"),
+                CreateMockConfigurationSection("5", ".ogg")
+            };
+            allowedExtensionsSection.Setup(s => s.GetChildren()).Returns(children);
             _mockConfiguration.Setup(c => c.GetSection("AudioEnhancementService:AllowedFileExtensions"))
-                .Returns(mockSection.Object);
+                .Returns(allowedExtensionsSection.Object);
+        }
+
+        private IConfigurationSection CreateMockConfigurationSection(string key, string value)
+        {
+            var mock = new Mock<IConfigurationSection>();
+            mock.Setup(s => s.Key).Returns(key);
+            mock.Setup(s => s.Value).Returns(value);
+            return mock.Object;
         }
 
         [Fact]
@@ -159,7 +178,7 @@ namespace AudioBackend.Tests.Services
             // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeFalse();
-            result.Message.Should().Be("Unable to connect to audio processing service");
+            result.Message.Should().Be("Audio enhancement service is currently unavailable");
         }
 
         [Fact]
@@ -175,7 +194,7 @@ namespace AudioBackend.Tests.Services
             // Assert
             result.Should().NotBeNull();
             result.Success.Should().BeFalse();
-            result.Message.Should().Contain("Audio processing failed: BadRequest");
+            result.Message.Should().Be("Audio enhancement service is currently unavailable");
         }
 
         [Fact]
@@ -257,7 +276,7 @@ namespace AudioBackend.Tests.Services
             result.Success.Should().BeTrue();
         }
 
-        private Mock<IFormFile> CreateMockAudioFile(string fileName, string contentType, long length)
+        private IFormFile CreateMockAudioFile(string fileName, string contentType, long length)
         {
             var mockFile = new Mock<IFormFile>();
             mockFile.Setup(f => f.FileName).Returns(fileName);

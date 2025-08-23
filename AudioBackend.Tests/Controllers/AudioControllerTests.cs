@@ -11,15 +11,21 @@ namespace AudioBackend.Tests.Controllers
 {
     public class AudioControllerTests
     {
-        private readonly Mock<AudioProcessorService> _mockAudioProcessorService;
+        private readonly Mock<IAudioProcessorService> _mockAudioProcessorService;
         private readonly Mock<ILogger<AudioController>> _mockLogger;
         private readonly AudioController _controller;
 
         public AudioControllerTests()
         {
-            _mockAudioProcessorService = new Mock<AudioProcessorService>();
+            _mockAudioProcessorService = new Mock<IAudioProcessorService>();
             _mockLogger = new Mock<ILogger<AudioController>>();
             _controller = new AudioController(_mockAudioProcessorService.Object, _mockLogger.Object);
+            
+            // Initialize HttpContext for the controller
+            _controller.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext()
+            };
         }
 
         [Fact]
@@ -27,7 +33,7 @@ namespace AudioBackend.Tests.Controllers
         {
             // Arrange
             var mockFile = CreateMockFile("test.wav", 1024);
-            var expectedResponse = AudioProcessingResponse.Success(
+            var expectedResponse = AudioProcessingResponse.CreateSuccess(
                 "test-123", 
                 "enhanced_test.wav", 
                 "/download/enhanced_test.wav", 
@@ -257,7 +263,7 @@ namespace AudioBackend.Tests.Controllers
             fileResult!.ContentType.Should().Be(expectedContentType);
         }
 
-        private static Mock<IFormFile> CreateMockFile(string fileName, long length)
+        private static IFormFile CreateMockFile(string fileName, long length)
         {
             var mockFile = new Mock<IFormFile>();
             mockFile.Setup(f => f.FileName).Returns(fileName);
