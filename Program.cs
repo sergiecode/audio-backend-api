@@ -3,6 +3,9 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Kestrel web server explicitly
+builder.WebHost.UseUrls("http://localhost:5000");
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -32,7 +35,7 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Configure HttpClient for AudioProcessorService
-builder.Services.AddHttpClient<AudioProcessorService>(client =>
+builder.Services.AddHttpClient<IAudioProcessorService, AudioProcessorService>(client =>
 {
     var baseUrl = builder.Configuration["AudioEnhancementService:BaseUrl"] ?? "http://localhost:8000";
     client.BaseAddress = new Uri(baseUrl);
@@ -45,7 +48,7 @@ builder.Services.AddHttpClient<AudioProcessorService>(client =>
 });
 
 // Register AudioProcessorService
-builder.Services.AddScoped<AudioProcessorService>();
+builder.Services.AddScoped<IAudioProcessorService, AudioProcessorService>();
 
 // Configure CORS for development
 builder.Services.AddCors(options =>
@@ -72,7 +75,12 @@ if (app.Environment.IsDevelopment())
     app.UseCors("DevelopmentPolicy");
 }
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production
+if (app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
@@ -99,3 +107,6 @@ finally
 {
     Log.CloseAndFlush();
 }
+
+// Make Program accessible to tests
+public partial class Program { }

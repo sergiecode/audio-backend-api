@@ -11,11 +11,11 @@ namespace AudioBackend.Controllers
     [Produces("application/json")]
     public class AudioController : ControllerBase
     {
-        private readonly AudioProcessorService _audioProcessorService;
+        private readonly IAudioProcessorService _audioProcessorService;
         private readonly ILogger<AudioController> _logger;
 
         public AudioController(
-            AudioProcessorService audioProcessorService,
+            IAudioProcessorService audioProcessorService,
             ILogger<AudioController> logger)
         {
             _audioProcessorService = audioProcessorService;
@@ -36,7 +36,7 @@ namespace AudioBackend.Controllers
         [ProducesResponseType(typeof(ErrorResponse), 400)]
         [ProducesResponseType(typeof(ErrorResponse), 413)]
         [ProducesResponseType(typeof(ErrorResponse), 500)]
-        public async Task<IActionResult> UploadAudio([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadAudio([FromForm] IFormFile? file)
         {
             try
             {
