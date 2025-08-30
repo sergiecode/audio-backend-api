@@ -419,10 +419,6 @@ This project is part of Sergie Code's AI tools for musicians series. Contributio
 4. Push to the branch
 5. Create a Pull Request
 
-## 📝 License
-
-This project is created for educational purposes as part of Sergie Code's programming tutorials.
-
 ## 💼 About Sergie Code
 
 **Software Engineer & YouTube Educator**
@@ -451,3 +447,4 @@ Passionate about creating AI tools for musicians and teaching programming throug
 *Built with ❤️ for the music and developer community*
 
 **Happy Coding! 🚀**
+
